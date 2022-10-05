@@ -1,4 +1,4 @@
-﻿using MediaBrowser.Common.Configuration;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
@@ -60,6 +60,22 @@ namespace Emby.Plugins.AniList
                 result.Item.Overview = WebContent.data.Media.description;
                 try
                 {
+                    StartDate startDate = WebContent.data.Media.startDate;
+                    DateTime date = new DateTime(startDate.year, startDate.month, startDate.day);
+                    date = date.ToUniversalTime();
+                    result.Item.PremiereDate = date;
+                    result.Item.ProductionYear = date.Year;
+                }
+                catch (Exception) { }
+                try
+                {
+                    EndDate endDate = WebContent.data.Media.endDate;
+                    DateTime date = new DateTime(endDate.year, endDate.month, endDate.day);
+                    date = date.ToUniversalTime();
+                    result.Item.EndDate = date;
+                }
+                catch (Exception) { }
+                try
                     //AniList has a max rating of 5
                     result.Item.CommunityRating = (WebContent.data.Media.averageScore / 10);
                 }
