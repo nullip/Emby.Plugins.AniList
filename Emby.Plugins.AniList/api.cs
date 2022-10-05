@@ -19,7 +19,7 @@ namespace Emby.Plugins.AniList
     /// <summary>
     /// Based on the new API from AniList
     /// 🛈 This code works with the API Interface (v2) from AniList
-    /// 🛈 https://anilist.gitbooks.io/anilist-apiv2-docs
+    /// 🛈 https://anilist.gitbook.io/anilist-apiv2-docs
     /// 🛈 THIS IS AN UNOFFICAL API INTERFACE FOR EMBY
     /// </summary>
     public class Api
@@ -44,6 +44,7 @@ query ($query: String, $type: MediaType) {
       averageScore
       popularity
       episodes
+      duration
       season
       hashtag
       isAdult
@@ -89,6 +90,7 @@ query ($query: String, $type: MediaType) {
     type
     status
     episodes
+    duration
     chapters
     volumes
     season

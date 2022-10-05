@@ -1,4 +1,4 @@
-using MediaBrowser.Common.Configuration;
+﻿using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
@@ -89,6 +89,17 @@ namespace Emby.Plugins.AniList
                 }
                 catch (Exception) { }
                 try
+                {
+                    int episodes = WebContent.data.Media.episodes;
+                    int duration = WebContent.data.Media.duration;
+                    if (episodes > 0 && duration > 0){
+                        // minutes to microseconds, needs to x10 to display correctly for some reason
+                        result.Item.RunTimeTicks = episodes * duration * (long)600000000;
+                    }
+                }
+                catch (Exception) { }
+                try
+                {
                     //AniList has a max rating of 5
                     result.Item.CommunityRating = (WebContent.data.Media.averageScore / 10);
                 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -50,6 +50,7 @@ namespace Emby.Plugins.AniList
         public int averageScore { get; set; }
         public int popularity { get; set; }
         public int episodes { get; set; }
+        public int duration { get; set; }
         public string season { get; set; }
         public string hashtag { get; set; }
         public bool isAdult { get; set; }
@@ -93,6 +94,7 @@ namespace Emby.Plugins.AniList
         public string type { get; set; }
         public string status { get; set; }
         public int episodes { get; set; }
+        public int duration { get; set; }
         public object chapters { get; set; }
         public object volumes { get; set; }
         public string season { get; set; }
