@@ -61,52 +61,53 @@ query ($query: String, $type: MediaType) {
     }
   }
 }&variables={ ""query"":""{0}"",""type"":""ANIME""}";
-        public string AniList_anime_link = @"https://graphql.anilist.co/api/v2?query=query($id: Int!, $type: MediaType) {
-  Media(id: $id, type: $type)
-        {
-            id
-            title {
-                romaji
-                english
-              native
-      userPreferred
-            }
-            startDate {
-                year
-                month
-              day
-            }
-            endDate {
-                year
-                month
-              day
-            }
-            coverImage {
-                large
-                medium
-            }
-            bannerImage
-            format
-    type
-    status
-    episodes
-    duration
-    chapters
-    volumes
-    season
-    description
-    averageScore
-    meanScore
-    genres
-    synonyms
-    nextAiringEpisode {
-                airingAt
-                timeUntilAiring
-      episode
-    }
+        public string AniList_anime_link = @"https://graphql.anilist.co/api/v2?query=
+query($id: Int!, $type: MediaType) {
+    Media(id: $id, type: $type) {
+        id
+        title {
+            romaji
+            english
+            native
+            userPreferred
         }
-    }&variables={ ""id"":""{0}"",""type"":""ANIME""}";
-        private const string AniList_anime_char_link = @"https://graphql.anilist.co/api/v2?query=query($id: Int!, $type: MediaType, $page: Int = 1) {
+        startDate {
+            year
+            month
+            day
+        }
+        endDate {
+            year
+            month
+            day
+        }
+        coverImage {
+            large
+            medium
+        }
+        bannerImage
+        format
+        type
+        status
+        episodes
+        duration
+        chapters
+        volumes
+        season
+        description
+        averageScore
+        meanScore
+        genres
+        synonyms
+        nextAiringEpisode {
+            airingAt
+            timeUntilAiring
+            episode
+        }
+    }
+}&variables={ ""id"":""{0}"",""type"":""ANIME""}";
+        private const string AniList_anime_char_link = @"https://graphql.anilist.co/api/v2?query=
+query($id: Int!, $type: MediaType, $page: Int = 1) {
   Media(id: $id, type: $type) {
     id
     characters(page: $page, sort: [ROLE]) {
