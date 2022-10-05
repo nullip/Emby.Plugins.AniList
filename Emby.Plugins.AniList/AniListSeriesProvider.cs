@@ -76,6 +76,19 @@ namespace Emby.Plugins.AniList
                 }
                 catch (Exception) { }
                 try
+                {
+                    string status = WebContent.data.Media.status;
+                    if (status == Status.RELEASING || status == Status.NOT_YET_RELEASED)
+                    {
+                        result.Item.Status = SeriesStatus.Continuing;
+                    }
+                    else
+                    {
+                        result.Item.Status = SeriesStatus.Ended;
+                    }
+                }
+                catch (Exception) { }
+                try
                     //AniList has a max rating of 5
                     result.Item.CommunityRating = (WebContent.data.Media.averageScore / 10);
                 }

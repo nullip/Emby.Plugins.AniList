@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -29,6 +29,15 @@ namespace Emby.Plugins.AniList
         public int year { get; set; }
         public int month { get; set; }
         public int day { get; set; }
+    }
+
+    public class Status
+    {
+        public static string FINISHED   { get { return "FINISHED"; } }
+        public static string RELEASING   { get { return "RELEASING"; } }
+        public static string NOT_YET_RELEASED    { get { return "NOT_YET_RELEASED"; } }
+        public static string CANCELLED { get { return "CANCELLED"; } }
+        public static string HIATUS   { get { return "HIATUS"; } }
     }
 
     public class Medium
