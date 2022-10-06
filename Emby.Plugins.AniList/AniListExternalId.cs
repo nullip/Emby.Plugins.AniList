@@ -1,4 +1,5 @@
-﻿using MediaBrowser.Controller.Entities.TV;
+﻿using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 
@@ -8,7 +9,7 @@ namespace Emby.Plugins.AniList
     {
         public bool Supports(IHasProviderIds item)
         {
-            return item is Series;
+            return item is Series || item is Movie;
         }
 
         public string Name

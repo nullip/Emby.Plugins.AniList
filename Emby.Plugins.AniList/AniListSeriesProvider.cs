@@ -14,11 +14,12 @@ using System.Threading.Tasks;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Configuration;
 using Emby.Anime;
+using MediaBrowser.Controller.Entities.Movies;
 
 //API v2
 namespace Emby.Plugins.AniList
 {
-    public class AniListSeriesProvider : IRemoteMetadataProvider<Series, SeriesInfo>, IHasOrder
+    public class AniListSeriesProvider : IRemoteMetadataProvider<Series, SeriesInfo>, IRemoteMetadataProvider<Movie, MovieInfo>, IHasOrder
     {
         private readonly IHttpClient _httpClient;
         private readonly IApplicationPaths _paths;
@@ -35,9 +36,8 @@ namespace Emby.Plugins.AniList
             _paths = appPaths;
         }
 
-        public async Task<MetadataResult<Series>> GetMetadata(SeriesInfo info, CancellationToken cancellationToken)
-        {
-            var result = new MetadataResult<Series>();
+        private async Task<RootObject> _GetContentById(ItemLookupInfo info, CancellationToken cancellationToken) {
+            RootObject WebContent = null;
 
             var aid = info.GetProviderId(ProviderNames.AniList);
             if (string.IsNullOrEmpty(aid))
@@ -48,33 +48,72 @@ namespace Emby.Plugins.AniList
 
             if (!string.IsNullOrEmpty(aid))
             {
-                RootObject WebContent = await _api.WebRequestAPI(_api.AniList_anime_link.Replace("{0}", aid), cancellationToken);
-                result.Item = new Series();
-                result.HasMetadata = true;
+                WebContent = await _api.WebRequestAPI(_api.AniList_anime_link.Replace("{0}", aid), cancellationToken);
+            }
 
-                result.Item.Name = _api.SelectName(WebContent, info.MetadataLanguage);
-                result.Item.OriginalTitle = WebContent.data.Media.title.native;
+            return WebContent;
+        }
 
-                result.People = await _api.GetPersonInfo(WebContent.data.Media.id, cancellationToken);
-                result.Item.SetProviderId(ProviderNames.AniList, aid);
-                result.Item.Overview = WebContent.data.Media.description;
-                try
-                {
-                    StartDate startDate = WebContent.data.Media.startDate;
-                    DateTime date = new DateTime(startDate.year, startDate.month, startDate.day);
-                    date = date.ToUniversalTime();
-                    result.Item.PremiereDate = date;
-                    result.Item.ProductionYear = date.Year;
+        private async Task<MetadataResult<T>> _GetMetadata<T, U>(T item, U info, RootObject WebContent, CancellationToken cancellationToken) where T : BaseItem where U : ItemLookupInfo
+        {
+            var result = new MetadataResult<T>();
+
+            result.Item = item;
+            result.HasMetadata = true;
+
+            result.Item.Name = _api.SelectName(WebContent, info.MetadataLanguage);
+            result.Item.OriginalTitle = WebContent.data.Media.title.native;
+
+            result.People = await _api.GetPersonInfo(WebContent.data.Media.id, cancellationToken);
+            result.Item.SetProviderId(ProviderNames.AniList, WebContent.data.Media.id.ToString());
+            result.Item.Overview = WebContent.data.Media.description;
+            try
+            {
+                StartDate startDate = WebContent.data.Media.startDate;
+                DateTime date = new DateTime(startDate.year, startDate.month, startDate.day);
+                date = date.ToUniversalTime();
+                result.Item.PremiereDate = date;
+                result.Item.ProductionYear = date.Year;
+            }
+            catch (Exception) { }
+            try
+            {
+                EndDate endDate = WebContent.data.Media.endDate;
+                DateTime date = new DateTime(endDate.year, endDate.month, endDate.day);
+                date = date.ToUniversalTime();
+                result.Item.EndDate = date;
+            }
+            catch (Exception) { }
+            try
+            {
+                int episodes = WebContent.data.Media.episodes;
+                int duration = WebContent.data.Media.duration;
+                if (episodes > 0 && duration > 0){
+                    // minutes to microseconds, needs to x10 to display correctly for some reason
+                    result.Item.RunTimeTicks = episodes * duration * (long)600000000;
                 }
-                catch (Exception) { }
-                try
-                {
-                    EndDate endDate = WebContent.data.Media.endDate;
-                    DateTime date = new DateTime(endDate.year, endDate.month, endDate.day);
-                    date = date.ToUniversalTime();
-                    result.Item.EndDate = date;
-                }
-                catch (Exception) { }
+            }
+            catch (Exception) { }
+            try
+            {
+                //AniList has a max rating of 5
+                result.Item.CommunityRating = (WebContent.data.Media.averageScore / 10);
+            }
+            catch (Exception) { }
+            foreach (var genre in _api.Get_Genre(WebContent))
+                result.Item.AddGenre(genre);
+            GenreHelper.CleanupGenres(result.Item);
+
+            return result;
+        }
+
+        public async Task<MetadataResult<Series>> GetMetadata(SeriesInfo info, CancellationToken cancellationToken)
+        {
+            RootObject WebContent = await _GetContentById(info, cancellationToken);
+            var result = await _GetMetadata<Series, SeriesInfo>(new Series(), info, WebContent, cancellationToken);
+
+            if (result.HasMetadata)
+            {
                 try
                 {
                     string status = WebContent.data.Media.status;
@@ -88,30 +127,11 @@ namespace Emby.Plugins.AniList
                     }
                 }
                 catch (Exception) { }
-                try
-                {
-                    int episodes = WebContent.data.Media.episodes;
-                    int duration = WebContent.data.Media.duration;
-                    if (episodes > 0 && duration > 0){
-                        // minutes to microseconds, needs to x10 to display correctly for some reason
-                        result.Item.RunTimeTicks = episodes * duration * (long)600000000;
-                    }
-                }
-                catch (Exception) { }
-                try
-                {
-                    //AniList has a max rating of 5
-                    result.Item.CommunityRating = (WebContent.data.Media.averageScore / 10);
-                }
-                catch (Exception) { }
-                foreach (var genre in _api.Get_Genre(WebContent))
-                    result.Item.AddGenre(genre);
-                GenreHelper.CleanupGenres(result.Item);
             }
             return result;
         }
 
-        public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(SeriesInfo searchInfo, CancellationToken cancellationToken)
+        private async Task<IEnumerable<RemoteSearchResult>> _GetSearchResults(ItemLookupInfo searchInfo, CancellationToken cancellationToken)
         {
             var results = new Dictionary<string, RemoteSearchResult>();
 
@@ -132,6 +152,23 @@ namespace Emby.Plugins.AniList
             }
 
             return results.Values;
+        }
+
+        public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(SeriesInfo searchInfo, CancellationToken cancellationToken)
+        {
+            return await _GetSearchResults(searchInfo, cancellationToken);
+        }
+
+        public async Task<MetadataResult<Movie>> GetMetadata(MovieInfo info, CancellationToken cancellationToken)
+        {
+            RootObject WebContent = await _GetContentById(info, cancellationToken);
+            var result = await _GetMetadata<Movie, MovieInfo>(new Movie(), info, WebContent, cancellationToken);
+            return result;
+        }
+
+        public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(MovieInfo searchInfo, CancellationToken cancellationToken)
+        {
+            return await _GetSearchResults(searchInfo, cancellationToken);
         }
 
         public Task<HttpResponseInfo> GetImageResponse(string url, CancellationToken cancellationToken)
@@ -158,7 +195,7 @@ namespace Emby.Plugins.AniList
 
         public string Name => "AniList";
 
-        public bool Supports(BaseItem item) => item is Series || item is Season;
+        public bool Supports(BaseItem item) => item is Movie || item is Series || item is Season;
 
         public IEnumerable<ImageType> GetSupportedImages(BaseItem item)
         {
