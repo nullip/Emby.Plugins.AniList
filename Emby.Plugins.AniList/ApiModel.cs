@@ -104,6 +104,9 @@ namespace Emby.Plugins.AniList
         public List<string> genres { get; set; }
         public List<object> synonyms { get; set; }
         public object nextAiringEpisode { get; set; }
+        public Studios studios { get; set; }
+        public Trailer trailer { get; set; }
+        public List<Tag> tags { get; set; }
     }
     public class PageInfo
     {
@@ -165,6 +168,33 @@ namespace Emby.Plugins.AniList
     {
         public PageInfo pageInfo { get; set; }
         public List<Edge> edges { get; set; }
+    }
+
+    public class StudioNode
+    {
+        public string name { get; set; }
+    }
+
+    public class StudioEdge
+    {
+        public StudioNode node { get; set; }
+    }
+
+    public class Studios
+    {
+        public PageInfo pageInfo { get; set; }
+        public List<StudioEdge> edges { get; set; }
+    }
+
+    public class Trailer
+    {
+        public string id { get; set; }
+        public string site { get; set; }
+    }
+
+    public class Tag
+    {
+        public string name { get; set; }
     }
 
 

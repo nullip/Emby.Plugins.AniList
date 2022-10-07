@@ -62,6 +62,13 @@ namespace Emby.Plugins.AniList
             result.Item.OriginalTitle = WebContent.data.Media.title.native;
 
             result.People = await _api.GetPersonInfo(WebContent.data.Media.id, cancellationToken);
+            foreach (var studio in _api.Get_Studio(WebContent))
+                result.Item.AddStudio(studio);
+            foreach (var tag in _api.Get_Tag(WebContent))
+                result.Item.AddTag(tag);
+            if (Equals_check.Compare_strings("youtube", WebContent.data.Media.trailer.site)) {
+                result.Item.AddTrailerUrl("https://youtube.com/watch?v=" + WebContent.data.Media.trailer.id);
+            }
             result.Item.SetProviderId(ProviderNames.AniList, WebContent.data.Media.id.ToString());
             result.Item.Overview = WebContent.data.Media.description;
             try

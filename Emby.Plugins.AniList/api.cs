@@ -104,10 +104,24 @@ query($id: Int!, $type: MediaType) {
             timeUntilAiring
             episode
         }
+        studios {
+            edges {
+                node {
+                    name
+                }
+            }
+        }
+        trailer {
+            id
+            site
+        }
+        tags {
+            name
+        }
     }
 }&variables={ ""id"":""{0}"",""type"":""ANIME""}";
         private const string AniList_anime_char_link = @"https://graphql.anilist.co/api/v2?query=
-query($id: Int!, $type: MediaType, $page: Int = 1) {
+query($id: Int!, $type: MediaType, $staffLanguage: StaffLanguage, $page: Int = 1) {
   Media(id: $id, type: $type) {
     id
     characters(page: $page, sort: [ROLE]) {
@@ -131,7 +145,7 @@ query($id: Int!, $type: MediaType, $page: Int = 1) {
           }
         }
         role
-        voiceActors {
+        voiceActors(language: $staffLanguage, sort: [ROLE]) {
           id
           name {
             first
@@ -147,7 +161,7 @@ query($id: Int!, $type: MediaType, $page: Int = 1) {
       }
     }
   }
-}&variables={ ""id"":""{0}"",""type"":""ANIME""}";
+}&variables={ ""id"":""{0}"",""type"":""ANIME"",""staffLanguage"":""JAPANESE""}";
 
         private IHttpClient _httpClient;
         private ILogger _logger;
@@ -215,13 +229,49 @@ query($id: Int!, $type: MediaType, $page: Int = 1) {
             RootObject WebContent = await WebRequestAPI(AniList_anime_char_link.Replace("{0}", id.ToString()), cancellationToken);
             foreach (Edge edge in WebContent.data.Media.characters.edges)
             {
-                PersonInfo pi = new PersonInfo();
-                pi.Name = edge.node.name.first + " " + edge.node.name.last;
-                pi.ImageUrl = edge.node.image.large;
-                pi.Role = edge.role;
+                if (edge.voiceActors.Count > 0) {
+                    VoiceActor va = edge.voiceActors[0];
+                    PersonInfo actor = new PersonInfo();
+                    PersonInfo character = new PersonInfo();
+                    actor.Name = va.name.first + " " + va.name.last;
+                    actor.ImageUrl = va.image.large;
+                    actor.Role = edge.node.name.first + " " + edge.node.name.last;
+                    actor.Type = PersonType.Actor;
+                    character.Name = actor.Role;
+                    character.ImageUrl = edge.node.image.large;
+                    character.Role = actor.Name;
+                    character.Type = PersonType.GuestStar;
+                    lpi.Add(actor);
+                    lpi.Add(character);
+                }
             }
             return lpi;
         }
+
+        /// <summary>
+        /// API call to get the studios of the anime
+        /// </summary>
+        /// <param name="WebContent"></param>
+        /// <returns></returns>
+        public List<string> Get_Studio(RootObject WebContent)
+        {
+            List<string> studios = new List<string>();
+            WebContent.data.Media.studios.edges.ForEach(edge => studios.Add(edge.node.name));
+            return studios;
+        }
+
+        /// <summary>
+        /// API call to get the tags of the anime
+        /// </summary>
+        /// <param name="WebContent"></param>
+        /// <returns></returns>
+        public List<string> Get_Tag(RootObject WebContent)
+        {
+            List<string> tags = new List<string>();
+            WebContent.data.Media.tags.ForEach(tag => tags.Add(tag.name));
+            return tags;
+        }
+
         /// <summary>
         /// Convert int to Guid
         /// </summary>
@@ -233,6 +283,7 @@ query($id: Int!, $type: MediaType, $page: Int = 1) {
             await Task.Run(() => BitConverter.GetBytes(value).CopyTo(bytes, 0), cancellationToken);
             return new Guid(bytes);
         }
+
         /// <summary>
         /// API call to get the genre of the anime
         /// </summary>
@@ -240,7 +291,6 @@ query($id: Int!, $type: MediaType, $page: Int = 1) {
         /// <returns></returns>
         public List<string> Get_Genre(RootObject WebContent)
         {
-
             return WebContent.data.Media.genres;
         }
 
