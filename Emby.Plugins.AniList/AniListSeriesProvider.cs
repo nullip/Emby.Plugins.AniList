@@ -84,16 +84,12 @@ namespace Emby.Plugins.AniList
                 result.Item.EndDate = date;
             }
             catch (Exception) { }
-            try
-            {
-                int episodes = WebContent.data.Media.episodes;
-                int duration = WebContent.data.Media.duration;
-                if (episodes > 0 && duration > 0){
-                    // minutes to microseconds, needs to x10 to display correctly for some reason
-                    result.Item.RunTimeTicks = episodes * duration * (long)600000000;
-                }
+            int episodes = WebContent.data.Media.episodes;
+            int duration = WebContent.data.Media.duration;
+            if (episodes > 0 && duration > 0){
+                // minutes to microseconds, needs to x10 to display correctly for some reason
+                result.Item.RunTimeTicks = episodes * duration * (long)600000000;
             }
-            catch (Exception) { }
             try
             {
                 //AniList has a max rating of 5
@@ -114,19 +110,15 @@ namespace Emby.Plugins.AniList
 
             if (result.HasMetadata)
             {
-                try
+                string status = WebContent.data.Media.status;
+                if (status == Status.RELEASING || status == Status.NOT_YET_RELEASED)
                 {
-                    string status = WebContent.data.Media.status;
-                    if (status == Status.RELEASING || status == Status.NOT_YET_RELEASED)
-                    {
-                        result.Item.Status = SeriesStatus.Continuing;
-                    }
-                    else
-                    {
-                        result.Item.Status = SeriesStatus.Ended;
-                    }
+                    result.Item.Status = SeriesStatus.Continuing;
                 }
-                catch (Exception) { }
+                else
+                {
+                    result.Item.Status = SeriesStatus.Ended;
+                }
             }
             return result;
         }
