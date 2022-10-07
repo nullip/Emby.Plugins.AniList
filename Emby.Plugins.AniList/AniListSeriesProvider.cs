@@ -19,95 +19,15 @@ using MediaBrowser.Controller.Entities.Movies;
 //API v2
 namespace Emby.Plugins.AniList
 {
-    public class AniListSeriesProvider : IRemoteMetadataProvider<Series, SeriesInfo>, IRemoteMetadataProvider<Movie, MovieInfo>, IHasOrder
+    public class AniListSeriesProvider : AniListMetadataProvider<Series, SeriesInfo>
     {
-        private readonly IHttpClient _httpClient;
-        private readonly IApplicationPaths _paths;
-        private readonly ILogger _log;
-        private readonly Api _api;
-        public int Order => 8;
-        public string Name => "AniList";
-
-        public AniListSeriesProvider(IApplicationPaths appPaths, IHttpClient httpClient, ILogManager logManager, IJsonSerializer jsonSerializer)
+        public AniListSeriesProvider(IApplicationPaths appPaths, IHttpClient httpClient, ILogManager logManager, IJsonSerializer jsonSerializer) : base(appPaths, httpClient, logManager, jsonSerializer)
         {
-            _log = logManager.GetLogger("AniList");
-            _httpClient = httpClient;
-            _api = new Api(_log, httpClient, jsonSerializer);
-            _paths = appPaths;
+            
         }
 
-        private async Task<RootObject> _GetContentById(ItemLookupInfo info, CancellationToken cancellationToken) {
-            RootObject WebContent = null;
-
-            var aid = info.GetProviderId(ProviderNames.AniList);
-            if (string.IsNullOrEmpty(aid))
-            {
-                _log.Info("Start AniList... Searching(" + info.Name + ")");
-                aid = await _api.FindSeries(info.Name, cancellationToken);
-            }
-
-            if (!string.IsNullOrEmpty(aid))
-            {
-                WebContent = await _api.WebRequestAPI(_api.AniList_anime_link.Replace("{0}", aid), cancellationToken);
-            }
-
-            return WebContent;
-        }
-
-        private async Task<MetadataResult<T>> _GetMetadata<T, U>(T item, U info, RootObject WebContent, CancellationToken cancellationToken) where T : BaseItem where U : ItemLookupInfo
+        protected override MetadataResult<Series> _GetMetadata(MetadataResult<Series> result, RootObject WebContent)
         {
-            var result = new MetadataResult<T>();
-
-            result.Item = item;
-            result.HasMetadata = true;
-
-            result.Item.Name = _api.SelectName(WebContent, info.MetadataLanguage);
-            result.Item.OriginalTitle = WebContent.data.Media.title.native;
-
-            result.People = await _api.GetPersonInfo(WebContent.data.Media.id, cancellationToken);
-            result.Item.SetProviderId(ProviderNames.AniList, WebContent.data.Media.id.ToString());
-            result.Item.Overview = WebContent.data.Media.description;
-            try
-            {
-                StartDate startDate = WebContent.data.Media.startDate;
-                DateTime date = new DateTime(startDate.year, startDate.month, startDate.day);
-                date = date.ToUniversalTime();
-                result.Item.PremiereDate = date;
-                result.Item.ProductionYear = date.Year;
-            }
-            catch (Exception) { }
-            try
-            {
-                EndDate endDate = WebContent.data.Media.endDate;
-                DateTime date = new DateTime(endDate.year, endDate.month, endDate.day);
-                date = date.ToUniversalTime();
-                result.Item.EndDate = date;
-            }
-            catch (Exception) { }
-            int episodes = WebContent.data.Media.episodes;
-            int duration = WebContent.data.Media.duration;
-            if (episodes > 0 && duration > 0){
-                // minutes to microseconds, needs to x10 to display correctly for some reason
-                result.Item.RunTimeTicks = episodes * duration * (long)600000000;
-            }
-            try
-            {
-                //AniList has a max rating of 5
-                result.Item.CommunityRating = (WebContent.data.Media.averageScore / 10);
-            }
-            catch (Exception) { }
-            foreach (var genre in _api.Get_Genre(WebContent))
-                result.Item.AddGenre(genre);
-            GenreHelper.CleanupGenres(result.Item);
-
-            return result;
-        }
-
-        public async Task<MetadataResult<Series>> GetMetadata(SeriesInfo info, CancellationToken cancellationToken)
-        {
-            RootObject WebContent = await _GetContentById(info, cancellationToken);
-            var result = await _GetMetadata<Series, SeriesInfo>(new Series(), info, WebContent, cancellationToken);
-
             if (result.HasMetadata)
             {
                 string status = WebContent.data.Media.status;
@@ -121,109 +41,6 @@ namespace Emby.Plugins.AniList
                 }
             }
             return result;
-        }
-
-        private async Task<IEnumerable<RemoteSearchResult>> _GetSearchResults(ItemLookupInfo searchInfo, CancellationToken cancellationToken)
-        {
-            var results = new Dictionary<string, RemoteSearchResult>();
-
-            var aid = searchInfo.GetProviderId(ProviderNames.AniList);
-            if (!string.IsNullOrEmpty(aid))
-            {
-                if (!results.ContainsKey(aid))
-                    results.Add(aid, await _api.GetAnime(aid, cancellationToken));
-            }
-
-            if (!string.IsNullOrEmpty(searchInfo.Name))
-            {
-                List<string> ids = await _api.Search_GetSeries_list(searchInfo.Name, cancellationToken);
-                foreach (string a in ids)
-                {
-                    results.Add(a, await _api.GetAnime(a, cancellationToken));
-                }
-            }
-
-            return results.Values;
-        }
-
-        public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(SeriesInfo searchInfo, CancellationToken cancellationToken)
-        {
-            return await _GetSearchResults(searchInfo, cancellationToken);
-        }
-
-        public async Task<MetadataResult<Movie>> GetMetadata(MovieInfo info, CancellationToken cancellationToken)
-        {
-            RootObject WebContent = await _GetContentById(info, cancellationToken);
-            var result = await _GetMetadata<Movie, MovieInfo>(new Movie(), info, WebContent, cancellationToken);
-            return result;
-        }
-
-        public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(MovieInfo searchInfo, CancellationToken cancellationToken)
-        {
-            return await _GetSearchResults(searchInfo, cancellationToken);
-        }
-
-        public Task<HttpResponseInfo> GetImageResponse(string url, CancellationToken cancellationToken)
-        {
-            return _httpClient.GetResponse(new HttpRequestOptions
-            {
-                CancellationToken = cancellationToken,
-                Url = url
-            });
-        }
-    }
-
-    public class AniListSeriesImageProvider : IRemoteImageProvider
-    {
-        private readonly IHttpClient _httpClient;
-        private readonly IApplicationPaths _appPaths;
-        private readonly Api _api;
-        public AniListSeriesImageProvider(ILogManager logManager, IHttpClient httpClient, IApplicationPaths appPaths, IJsonSerializer jsonSerializer)
-        {
-            _httpClient = httpClient;
-            _appPaths = appPaths;
-            _api = new Api(logManager.GetLogger(Name), httpClient, jsonSerializer);
-        }
-
-        public string Name => "AniList";
-
-        public bool Supports(BaseItem item) => item is Movie || item is Series || item is Season;
-
-        public IEnumerable<ImageType> GetSupportedImages(BaseItem item)
-        {
-            return new[] { ImageType.Primary };
-        }
-
-        public Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, LibraryOptions libraryOptions, CancellationToken cancellationToken)
-        {
-            var seriesId = item.GetProviderId(ProviderNames.AniList);
-            return GetImages(seriesId, cancellationToken);
-        }
-
-        public async Task<IEnumerable<RemoteImageInfo>> GetImages(string aid, CancellationToken cancellationToken)
-        {
-            var list = new List<RemoteImageInfo>();
-
-            if (!string.IsNullOrEmpty(aid))
-            {
-                var primary = _api.Get_ImageUrl(await _api.WebRequestAPI(_api.AniList_anime_link.Replace("{0}", aid), cancellationToken));
-                list.Add(new RemoteImageInfo
-                {
-                    ProviderName = Name,
-                    Type = ImageType.Primary,
-                    Url = primary
-                });
-            }
-            return list;
-        }
-
-        public Task<HttpResponseInfo> GetImageResponse(string url, CancellationToken cancellationToken)
-        {
-            return _httpClient.GetResponse(new HttpRequestOptions
-            {
-                CancellationToken = cancellationToken,
-                Url = url
-            });
         }
     }
 }
