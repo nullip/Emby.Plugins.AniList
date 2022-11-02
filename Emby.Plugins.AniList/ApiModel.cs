@@ -31,6 +31,15 @@ namespace Emby.Plugins.AniList
         public int day { get; set; }
     }
 
+    public class Status
+    {
+        public static string FINISHED { get { return "FINISHED"; } }
+        public static string RELEASING  { get { return "RELEASING"; } }
+        public static string NOT_YET_RELEASED { get { return "NOT_YET_RELEASED"; } }
+        public static string CANCELLED { get { return "CANCELLED"; } }
+        public static string HIATUS { get { return "HIATUS"; } }
+    }
+
     public class Medium
     {
         public int id { get; set; }
@@ -41,6 +50,7 @@ namespace Emby.Plugins.AniList
         public int averageScore { get; set; }
         public int popularity { get; set; }
         public int episodes { get; set; }
+        public int duration { get; set; }
         public string season { get; set; }
         public string hashtag { get; set; }
         public bool isAdult { get; set; }
@@ -84,6 +94,7 @@ namespace Emby.Plugins.AniList
         public string type { get; set; }
         public string status { get; set; }
         public int episodes { get; set; }
+        public int duration { get; set; }
         public object chapters { get; set; }
         public object volumes { get; set; }
         public string season { get; set; }
@@ -93,6 +104,9 @@ namespace Emby.Plugins.AniList
         public List<string> genres { get; set; }
         public List<object> synonyms { get; set; }
         public object nextAiringEpisode { get; set; }
+        public Studios studios { get; set; }
+        public Trailer trailer { get; set; }
+        public List<Tag> tags { get; set; }
     }
     public class PageInfo
     {
@@ -154,6 +168,33 @@ namespace Emby.Plugins.AniList
     {
         public PageInfo pageInfo { get; set; }
         public List<Edge> edges { get; set; }
+    }
+
+    public class StudioNode
+    {
+        public string name { get; set; }
+    }
+
+    public class StudioEdge
+    {
+        public StudioNode node { get; set; }
+    }
+
+    public class Studios
+    {
+        public PageInfo pageInfo { get; set; }
+        public List<StudioEdge> edges { get; set; }
+    }
+
+    public class Trailer
+    {
+        public string id { get; set; }
+        public string site { get; set; }
+    }
+
+    public class Tag
+    {
+        public string name { get; set; }
     }
 
 

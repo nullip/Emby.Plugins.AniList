@@ -1,4 +1,5 @@
-﻿using MediaBrowser.Controller.Entities.TV;
+﻿using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.TV;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -208,34 +209,34 @@ namespace Emby.Anime
             {"Psychological Thriller", "Thriller"}
         };
 
-        public static void CleanupGenres(Series series)
+        public static void CleanupGenres(BaseItem item)
         {
-            series.Genres = RemoveRedundantGenres(series.Genres)
+            item.Genres = RemoveRedundantGenres(item.Genres)
                                        .Distinct(StringComparer.OrdinalIgnoreCase)
                                        .ToArray();
 
-            TidyGenres(series);
+            TidyGenres(item);
 
-            series.Genres = series.Genres.Except(new[] { "Animation", "Anime" }).ToArray();
+            item.Genres = item.Genres.Except(new[] { "Animation", "Anime" }).ToArray();
 
-            series.Genres = series.Genres.ToArray();
+            item.Genres = item.Genres.ToArray();
 
-            if (!series.Genres.Contains("Anime", StringComparer.OrdinalIgnoreCase))
+            if (!item.Genres.Contains("Anime", StringComparer.OrdinalIgnoreCase))
             {
-                series.Genres = series.Genres.Except(new[] { "Animation" }).ToArray();
+                item.Genres = item.Genres.Except(new[] { "Animation" }).ToArray();
 
-                series.AddGenre("Anime");
+                item.AddGenre("Anime");
             }
 
-            series.Genres = series.Genres.OrderBy(i => i).ToArray();
+            item.Genres = item.Genres.OrderBy(i => i).ToArray();
         }
 
-        public static void TidyGenres(Series series)
+        public static void TidyGenres(BaseItem item)
         {
             var genres = new HashSet<string>();
-            var tags = new HashSet<string>(series.Tags);
+            var tags = new HashSet<string>(item.Tags);
 
-            foreach (string genre in series.Genres)
+            foreach (string genre in item.Genres)
             {
                 string mapped;
                 if (GenreMappings.TryGetValue(genre, out mapped))
@@ -251,8 +252,8 @@ namespace Emby.Anime
                 }
             }
 
-            series.Genres = genres.ToArray();
-            series.Tags = tags.ToArray();
+            item.Genres = genres.ToArray();
+            item.Tags = tags.ToArray();
         }
 
         public static IEnumerable<string> RemoveRedundantGenres(IEnumerable<string> genres)

@@ -19,7 +19,7 @@ namespace Emby.Plugins.AniList
     /// <summary>
     /// Based on the new API from AniList
     /// 🛈 This code works with the API Interface (v2) from AniList
-    /// 🛈 https://anilist.gitbooks.io/anilist-apiv2-docs
+    /// 🛈 https://anilist.gitbook.io/anilist-apiv2-docs
     /// 🛈 THIS IS AN UNOFFICAL API INTERFACE FOR EMBY
     /// </summary>
     public class Api
@@ -44,6 +44,7 @@ query ($query: String, $type: MediaType) {
       averageScore
       popularity
       episodes
+      duration
       season
       hashtag
       isAdult
@@ -60,51 +61,67 @@ query ($query: String, $type: MediaType) {
     }
   }
 }&variables={ ""query"":""{0}"",""type"":""ANIME""}";
-        public string AniList_anime_link = @"https://graphql.anilist.co/api/v2?query=query($id: Int!, $type: MediaType) {
-  Media(id: $id, type: $type)
-        {
-            id
-            title {
-                romaji
-                english
-              native
-      userPreferred
-            }
-            startDate {
-                year
-                month
-              day
-            }
-            endDate {
-                year
-                month
-              day
-            }
-            coverImage {
-                large
-                medium
-            }
-            bannerImage
-            format
-    type
-    status
-    episodes
-    chapters
-    volumes
-    season
-    description
-    averageScore
-    meanScore
-    genres
-    synonyms
-    nextAiringEpisode {
-                airingAt
-                timeUntilAiring
-      episode
-    }
+        public string AniList_anime_link = @"https://graphql.anilist.co/api/v2?query=
+query($id: Int!, $type: MediaType) {
+    Media(id: $id, type: $type) {
+        id
+        title {
+            romaji
+            english
+            native
+            userPreferred
         }
-    }&variables={ ""id"":""{0}"",""type"":""ANIME""}";
-        private const string AniList_anime_char_link = @"https://graphql.anilist.co/api/v2?query=query($id: Int!, $type: MediaType, $page: Int = 1) {
+        startDate {
+            year
+            month
+            day
+        }
+        endDate {
+            year
+            month
+            day
+        }
+        coverImage {
+            large
+            medium
+        }
+        bannerImage
+        format
+        type
+        status
+        episodes
+        duration
+        chapters
+        volumes
+        season
+        description
+        averageScore
+        meanScore
+        genres
+        synonyms
+        nextAiringEpisode {
+            airingAt
+            timeUntilAiring
+            episode
+        }
+        studios {
+            edges {
+                node {
+                    name
+                }
+            }
+        }
+        trailer {
+            id
+            site
+        }
+        tags {
+            name
+        }
+    }
+}&variables={ ""id"":""{0}"",""type"":""ANIME""}";
+        private const string AniList_anime_char_link = @"https://graphql.anilist.co/api/v2?query=
+query($id: Int!, $type: MediaType, $staffLanguage: StaffLanguage, $page: Int = 1) {
   Media(id: $id, type: $type) {
     id
     characters(page: $page, sort: [ROLE]) {
@@ -128,7 +145,7 @@ query ($query: String, $type: MediaType) {
           }
         }
         role
-        voiceActors {
+        voiceActors(language: $staffLanguage, sort: [ROLE]) {
           id
           name {
             first
@@ -144,7 +161,7 @@ query ($query: String, $type: MediaType) {
       }
     }
   }
-}&variables={ ""id"":""{0}"",""type"":""ANIME""}";
+}&variables={ ""id"":""{0}"",""type"":""ANIME"",""staffLanguage"":""JAPANESE""}";
 
         private IHttpClient _httpClient;
         private ILogger _logger;
@@ -212,13 +229,49 @@ query ($query: String, $type: MediaType) {
             RootObject WebContent = await WebRequestAPI(AniList_anime_char_link.Replace("{0}", id.ToString()), cancellationToken);
             foreach (Edge edge in WebContent.data.Media.characters.edges)
             {
-                PersonInfo pi = new PersonInfo();
-                pi.Name = edge.node.name.first + " " + edge.node.name.last;
-                pi.ImageUrl = edge.node.image.large;
-                pi.Role = edge.role;
+                if (edge.voiceActors.Count > 0) {
+                    VoiceActor va = edge.voiceActors[0];
+                    PersonInfo actor = new PersonInfo();
+                    PersonInfo character = new PersonInfo();
+                    actor.Name = va.name.first + " " + va.name.last;
+                    actor.ImageUrl = va.image.large;
+                    actor.Role = edge.node.name.first + " " + edge.node.name.last;
+                    actor.Type = PersonType.Actor;
+                    character.Name = actor.Role;
+                    character.ImageUrl = edge.node.image.large;
+                    character.Role = actor.Name;
+                    character.Type = PersonType.GuestStar;
+                    lpi.Add(actor);
+                    lpi.Add(character);
+                }
             }
             return lpi;
         }
+
+        /// <summary>
+        /// API call to get the studios of the anime
+        /// </summary>
+        /// <param name="WebContent"></param>
+        /// <returns></returns>
+        public List<string> Get_Studio(RootObject WebContent)
+        {
+            List<string> studios = new List<string>();
+            WebContent.data.Media.studios.edges.ForEach(edge => studios.Add(edge.node.name));
+            return studios;
+        }
+
+        /// <summary>
+        /// API call to get the tags of the anime
+        /// </summary>
+        /// <param name="WebContent"></param>
+        /// <returns></returns>
+        public List<string> Get_Tag(RootObject WebContent)
+        {
+            List<string> tags = new List<string>();
+            WebContent.data.Media.tags.ForEach(tag => tags.Add(tag.name));
+            return tags;
+        }
+
         /// <summary>
         /// Convert int to Guid
         /// </summary>
@@ -230,6 +283,7 @@ query ($query: String, $type: MediaType) {
             await Task.Run(() => BitConverter.GetBytes(value).CopyTo(bytes, 0), cancellationToken);
             return new Guid(bytes);
         }
+
         /// <summary>
         /// API call to get the genre of the anime
         /// </summary>
@@ -237,7 +291,6 @@ query ($query: String, $type: MediaType) {
         /// <returns></returns>
         public List<string> Get_Genre(RootObject WebContent)
         {
-
             return WebContent.data.Media.genres;
         }
 
