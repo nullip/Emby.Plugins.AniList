@@ -66,9 +66,11 @@ namespace Emby.Plugins.AniList
                 result.Item.AddStudio(studio);
             foreach (var tag in _api.Get_Tag(WebContent))
                 result.Item.AddTag(tag);
-            if (Equals_check.Compare_strings("youtube", WebContent.data.Media.trailer.site)) {
-                result.Item.AddTrailerUrl("https://youtube.com/watch?v=" + WebContent.data.Media.trailer.id);
-            }
+            try {
+                if (Equals_check.Compare_strings("youtube", WebContent.data.Media.trailer.site)) {
+                    result.Item.AddTrailerUrl("https://youtube.com/watch?v=" + WebContent.data.Media.trailer.id);
+                }
+            } catch (Exception) { }
             result.Item.SetProviderId(ProviderNames.AniList, WebContent.data.Media.id.ToString());
             result.Item.Overview = WebContent.data.Media.description;
             try
