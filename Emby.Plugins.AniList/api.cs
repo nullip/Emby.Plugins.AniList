@@ -13,6 +13,8 @@ using MediaBrowser.Common.Net;
 using System.IO;
 using MediaBrowser.Model.Net;
 using MediaBrowser.Model.Logging;
+using System.Xml;
+using System.Drawing;
 
 namespace Emby.Plugins.AniList
 {
@@ -205,7 +207,7 @@ query($id: Int!, $type: MediaType, $staffLanguage: StaffLanguage, $page: Int = 1
         {
             if (string.IsNullOrEmpty(preferredLanguage) || preferredLanguage.StartsWith("en", StringComparison.OrdinalIgnoreCase))
             {
-                var title = WebContent.data.Media.title.english;
+                var title = WebContent.data.Media.title.english; // something fucky, if no value "english" then errors out
                 if (!string.IsNullOrWhiteSpace(title))
                 {
                     return title;
@@ -219,7 +221,6 @@ query($id: Int!, $type: MediaType, $staffLanguage: StaffLanguage, $page: Int = 1
                     return title;
                 }
             }
-
             return WebContent.data.Media.title.romaji;
         }
 
@@ -273,18 +274,6 @@ query($id: Int!, $type: MediaType, $staffLanguage: StaffLanguage, $page: Int = 1
         }
 
         /// <summary>
-        /// Convert int to Guid
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public async static Task<Guid> ToGuid(int value, CancellationToken cancellationToken)
-        {
-            byte[] bytes = new byte[16];
-            await Task.Run(() => BitConverter.GetBytes(value).CopyTo(bytes, 0), cancellationToken);
-            return new Guid(bytes);
-        }
-
-        /// <summary>
         /// API call to get the genre of the anime
         /// </summary>
         /// <param name="WebContent"></param>
@@ -334,31 +323,43 @@ query($id: Int!, $type: MediaType, $staffLanguage: StaffLanguage, $page: Int = 1
         {
             string result = null;
             RootObject WebContent = await WebRequestAPI(SearchLink.Replace("{0}", title), cancellationToken);
+            var count = 1;
             foreach (Medium media in WebContent.data.Page.media)
             {
-                //get id
-
-                try
+                // Less restrictive check against first result (Which should in theory, be the most accurate result)
+                if (count == 1)
                 {
-
-                    if (Equals_check.Compare_strings(media.title.romaji, title))
+                    if (Equals_check.Compare_strings_less_strict(media.title.romaji, title))
                     {
                         return media.id.ToString();
                     }
-                    if (Equals_check.Compare_strings(media.title.english, title))
+                    if (Equals_check.Compare_strings_less_strict(media.title.english, title))
                     {
                         return media.id.ToString();
                     }
-                    //Disabled due to false result.
-                    /*if (await Task.Run(() => Equals_check.Compare_strings(media.title.native, title)))
-                    {
-                        return media.id.ToString();
-                    }*/
                 }
 
-                catch (Exception) { }
-            }
+                //get id
+                if (Equals_check.Compare_strings(media.title.romaji, title))
+                {
+                    return media.id.ToString();
+                }
+                if (Equals_check.Compare_strings(media.title.english, title))
+                {
+                    return media.id.ToString();
+                }
 
+
+                count++;
+
+                // Check if only result
+
+                //Disabled due to false result.
+                /*if (await Task.Run(() => Equals_check.Compare_strings(media.title.native, title)))
+                {
+                    return media.id.ToString();
+                }*/
+            }
             return result;
         }
 
@@ -372,29 +373,31 @@ query($id: Int!, $type: MediaType, $staffLanguage: StaffLanguage, $page: Int = 1
         {
             List<string> result = new List<string>();
             RootObject WebContent = await WebRequestAPI(SearchLink.Replace("{0}", title), cancellationToken);
+            var count = 1;
             foreach (Medium media in WebContent.data.Page.media)
             {
-                //get id
-
-                try
+                // Less restrictive check against first result (Which should in theory, be the most accurate result)
+                if (count == 1)
                 {
-
-                    if (Equals_check.Compare_strings(media.title.romaji, title))
+                    if (Equals_check.Compare_strings_less_strict(media.title.romaji, title))
                     {
                         result.Add(media.id.ToString());
                     }
-                    if (Equals_check.Compare_strings(media.title.english, title))
+                    if (Equals_check.Compare_strings_less_strict(media.title.english, title))
                     {
                         result.Add(media.id.ToString());
                     }
-                    //Disabled due to false result.
-                    /*if (await Task.Run(() => Equals_check.Compare_strings(media.title.native, title)))
-                    {
-                        result.Add(media.id.ToString());
-                    }*/
                 }
 
-                catch (Exception) { }
+                if (Equals_check.Compare_strings(media.title.romaji, title))
+                {
+                    result.Add(media.id.ToString());
+                }
+                if (Equals_check.Compare_strings(media.title.english, title))
+                {
+                    result.Add(media.id.ToString());
+                }
+                //count++;
             }
             return result;
         }

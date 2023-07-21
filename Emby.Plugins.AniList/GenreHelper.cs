@@ -50,19 +50,6 @@ namespace Emby.Anime
             {"Yaoi", "Adult"},
             {"Yuri", "Adult"},
             {"Zombie", "Supernatural"},
-            //AniSearch Genre
-            {"Geister­geschichten", "Geister­geschichten"},
-            {"Romanze", "Romance"},
-            {"Alltagsdrama", "Slice of Life"},
-            {"Alltagsleben", "Slice of Life"},
-            {"Psychodrama", "Psycho"},
-            {"Actiondrama", "Action"},
-            {"Nonsense-Komödie", "Comedy"},
-            {"Magie", "Fantasy"},
-            {"Abenteuer", "Adventure"},
-            {"Komödie", "Comedy"},
-            {"Erotik", "Adult"},
-            {"Historisch", "Period & Historical"},
             //Proxer
             {"Slice_of_Life", "Slice of Life"},
         };
@@ -77,29 +64,14 @@ namespace Emby.Anime
             "Demons",
             "Witch",
             //AniSearchTags
-            "Krieg",
-            "Militär",
             "Satire",
-            "Übermäßige Gewaltdarstellung",
             "Monster",
-            "Zeitgenössische Fantasy",
-            "Dialogwitz",
-            "Romantische Komödie",
             "Slapstick",
-            "Alternative Welt",
             "4-panel",
             "CG-Anime",
-            "Episodisch",
             "Moe",
-            "Parodie",
-            "Splatter",
-            "Tragödie",
-            "Verworrene Handlung",
             //Themen
-            "Erwachsenwerden",
             "Gender Bender",
-            "Ältere Frau, jüngerer Mann",
-            "Älterer Mann, jüngere Frau",
             //Schule (School)
             "Grundschule",
             "Kindergarten",
@@ -116,28 +88,10 @@ namespace Emby.Anime
             "Meiji-Ära",
             "Mittelalter",
             "Weltkriege",
-            //Fantasy
-            "Dunkle Fantasy",
-            "Epische Fantasy",
-            "Zeitgenössische Fantasy",
-            //Ort
-            "Alternative Welt",
-            "In einem Raumschiff",
-            "Weltraum",
             //Setting
             "Cyberpunk",
             "Endzeit",
             "Space Opera",
-            //Hauptfigur
-            "Charakterschache Heldin",
-            "Charakterschacher Held",
-            "Charakterstarke Heldin",
-            "Charakterstarker Held",
-            "Gedächtnisverlust",
-            "Stoische Heldin",
-            "Stoischer Held",
-            "Widerwillige Heldin",
-            "Widerwilliger Held",
             //Figuren
             "Diva",
             "Genie",
@@ -146,21 +100,12 @@ namespace Emby.Anime
             "Tsundere",
             "Yandere",
             //Kampf (fight)
-            "Bionische Kräfte",
             "Martial Arts",
-            "PSI-Kräfte",
             "Real Robots",
             "Super Robots",
-            "Schusswaffen",
-            "Schwerter & co",
             //Sports (Sport)
             "Baseball",
-            "Boxen",
-            "Denk- und Glücksspiele",
             "Football",
-            "Fußball",
-            "Kampfsport",
-            "Rennsport",
             "Tennis",
             //Kunst (Art)
             "Anime & Film",
@@ -170,24 +115,16 @@ namespace Emby.Anime
             "Theater",
             //Tätigkeit
             "Band",
-            "Detektiv",
-            "Dieb",
-            "Essenszubereitung",
             "Idol",
-            "Kopfgeldjäger",
             "Ninja",
             "Polizist",
             "Ritter",
             "Samurai",
-            "Solosänger",
             //Wesen
-            "Außerirdische",
             "Cyborgs",
-            "Dämonen",
             "Elfen",
             "Geister",
             "Hexen",
-            "Himmlische Wesen",
             "Kamis",
             "Kemonomimi",
             "Monster",
@@ -201,7 +138,6 @@ namespace Emby.Anime
             "Game",
             "Survival",
             "Fanservice",
-            "Schlauer Protagonist",
         };
 
         private static readonly Dictionary<string, string> IgnoreIfPresent = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -238,8 +174,7 @@ namespace Emby.Anime
 
             foreach (string genre in item.Genres)
             {
-                string mapped;
-                if (GenreMappings.TryGetValue(genre, out mapped))
+                if (GenreMappings.TryGetValue(genre, out string mapped))
                     genres.Add(mapped);
                 else
                 {

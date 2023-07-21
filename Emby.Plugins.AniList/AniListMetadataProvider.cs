@@ -15,7 +15,7 @@ using Emby.Anime;
 //API v2
 namespace Emby.Plugins.AniList
 {
-    public class AniListMetadataProvider<T, U> : IRemoteMetadataProvider<T, U>, IHasOrder where T : BaseItem,IHasLookupInfo<U>,new() where U : ItemLookupInfo,new()
+    public class AniListMetadataProvider<T, U> : IRemoteMetadataProvider<T, U>, IHasOrder where T : BaseItem, IHasLookupInfo<U>, new() where U : ItemLookupInfo, new()
     {
         protected readonly IHttpClient _httpClient;
         protected readonly IApplicationPaths _paths;
@@ -50,6 +50,7 @@ namespace Emby.Plugins.AniList
 
             if (!string.IsNullOrEmpty(aid))
             {
+                _log.Info("Start Anilist Anime Link ID Searching(" + info.Name + ")");
                 WebContent = await _api.WebRequestAPI(_api.AniList_anime_link.Replace("{0}", aid), cancellationToken);
             }
 
@@ -58,7 +59,9 @@ namespace Emby.Plugins.AniList
             result.Item = new T();
             result.HasMetadata = true;
 
+            _log.Info("[DB] Return Name");
             result.Item.Name = _api.SelectName(WebContent, info.MetadataLanguage);
+            _log.Info("[DB] Return 7");
             result.Item.OriginalTitle = WebContent.data.Media.title.native;
 
             result.People = await _api.GetPersonInfo(WebContent.data.Media.id, cancellationToken);
@@ -70,7 +73,9 @@ namespace Emby.Plugins.AniList
                 if (Equals_check.Compare_strings("youtube", WebContent.data.Media.trailer.site)) {
                     result.Item.AddTrailerUrl("https://youtube.com/watch?v=" + WebContent.data.Media.trailer.id);
                 }
-            } catch (Exception) { }
+            } catch (Exception) {
+                _log.Info("Failed to extract youtube trailer.");
+            }
             result.Item.SetProviderId(ProviderNames.AniList, WebContent.data.Media.id.ToString());
             result.Item.Overview = WebContent.data.Media.description;
             try
