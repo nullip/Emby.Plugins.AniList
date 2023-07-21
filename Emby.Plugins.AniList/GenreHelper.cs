@@ -6,56 +6,43 @@ using System.Linq;
 
 namespace Emby.Anime
 {
+    /* query {
+      GenreCollection
+    } */
+
+    /* query {
+        MediaTagCollection {
+             name
+         }
+    } */
     public static class GenreHelper
     {
-        private static readonly Dictionary<string, string> GenreMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        /* private static readonly Dictionary<string, string> GenreMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            {"Action", "Action"},
-            {"Advanture", "Adventure"},
-            {"Contemporary Fantasy", "Fantasy"},
-            {"Comedy", "Comedy"},
-            {"Dark Fantasy", "Fantasy"},
-            {"Dementia", "Psychological Thriller"},
-            {"Demons", "Fantasy"},
-            {"Drama", "Drama"},
-            {"Ecchi", "Ecchi"},
-            {"Fantasy", "Fantasy"},
-            {"Harem", "Harem"},
-            {"Hentai", "Adult"},
-            {"Historical", "Period & Historical"},
-            {"Horror", "Horror"},
-            {"Josei", "Josei"},
-            {"Kids", "Kids"},
-            {"Magic", "Fantasy"},
-            {"Martial Arts", "Martial Arts"},
-            {"Mahou Shoujo", "Mahou Shoujo"},
-            {"Mecha", "Mecha"},
-            {"Music", "Music"},
-            {"Mystery", "Mystery"},
-            {"Parody", "Comedy"},
-            {"Psychological", "Psychological Thriller"},
-            {"Romance", "Romance"},
-            {"Sci-Fi", "Sci-Fi"},
-            {"Seinen", "Seinen"},
-            {"Shoujo", "Shoujo"},
-            {"Shounen", "Shounen"},
-            {"Slice of Life", "Slice of Life"},
-            {"Space", "Sci-Fi"},
-            {"Sports", "Sport"},
-            {"Supernatural", "Supernatural"},
-            {"Thriller", "Thriller"},
-            {"Tragedy", "Tragedy"},
-            {"Witch", "Supernatural"},
-            {"Vampire", "Supernatural"},
-            {"Yaoi", "Adult"},
-            {"Yuri", "Adult"},
-            {"Zombie", "Supernatural"},
-            //Proxer
-            {"Slice_of_Life", "Slice of Life"},
-        };
+            // Actual Genres -> Genres, only really needed when the Input Category is different than the output, otherwise it is wasted cycles.
+            // {"Action", "Action"},
+            // {"Adventure", "Adventure"},
+            // {"Comedy", "Comedy"},
+            // {"Drama", "Drama"},
+            // {"Ecchi", "Ecchi"},
+            // {"Fantasy", "Fantasy"},
+            // {"Horror", "Horror"},
+            // {"Mahou Shoujo", "Mahou Shoujo"},
+            // {"Mecha", "Mecha"},
+            // {"Music", "Music"},
+            // {"Mystery", "Mystery"},
+            // {"Psychological", "Psychological"},
+            // {"Romance", "Romance"},
+            // {"Sci-Fi", "Sci-Fi"},
+            // {"Slice of Life", "Slice of Life"},
+            // {"Sports", "Sports"},
+            // {"Supernatural", "Supernatural"},
+            // {"Thriller", "Thriller"},
+        }; */
 
         private static readonly string[] GenresAsTags =
         {
+            // Tags to Tag with
             "Hentai",
             "Space",
             "Weltraum",
@@ -174,12 +161,7 @@ namespace Emby.Anime
 
             foreach (string genre in item.Genres)
             {
-                if (GenreMappings.TryGetValue(genre, out string mapped))
-                    genres.Add(mapped);
-                else
-                {
-                    genres.Add(genre);
-                }
+                genres.Add(genre);
 
                 if (GenresAsTags.Contains(genre, StringComparer.OrdinalIgnoreCase))
                 {
